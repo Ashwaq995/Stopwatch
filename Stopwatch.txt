@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stopwatch & Clock</title>
+<style>
+body {
+font-family: 'Arial', sans-serif;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+height: 100vh;
+margin: 0;
+background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+color: #333;
+}
+
+.container {
+text-align: center;
+background-color: white;
+padding: 2rem;
+border-radius: 15px;
+box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+width: 90%;
+max-width: 400px;
+}
+
+h1 {
+margin-bottom: 2rem;
+color: #2c3e50;
+}
+
+.clock {
+font-size: 2.5rem;
+margin-bottom: 2rem;
+color: #2c3e50;
+font-weight: bold;
+}
+
+.stopwatch {
+font-size: 3rem;
+margin: 1.5rem 0;
+font-family: monospace;
+color: #e74c3c;
+}
+
+.controls {
+display: flex;
+justify-content: center;
+gap: 1rem;
+margin-top: 1.5rem;
+}
+
+button {
+padding: 0.8rem 1.5rem;
+font-size: 1rem;
+border: none;
+border-radius: 50px;
+cursor: pointer;
+transition: all 0.3s ease;
+font-weight: bold;
+}
+
+#startBtn {
+background-color: #2ecc71;
+color: white;
+}
+
+#startBtn:hover {
+background-color: #27ae60;
+}
+
+#stopBtn {
+background-color: #e74c3c;
+color: white;
+}
+
+#stopBtn:hover {
+background-color: #c0392b;
+}
+
+#resetBtn {
+background-color: #3498db;
+color: white;
+}
+
+#resetBtn:hover {
+background-color: #2980b9;
+}
+
+.tabs {
+display: flex;
+margin-bottom: 1.5rem;
+border-bottom: 1px solid #ddd;
+}
+
+.tab {
+padding: 0.8rem 1.5rem;
+cursor: pointer;
+background: none;
+border: none;
+font-size: 1rem;
+font-weight: bold;
+color: #7f8c8d;
+transition: all 0.3s ease;
+}
+
+.tab.active {
+color: #2c3e50;
+border-bottom: 3px solid #3498db;
+}
+
+.tab-content {
+display: none;
+}
+
+.tab-content.active {
+display: block;
+}
+
+.lap-list {
+max-height: 150px;
+overflow-y: auto;
+margin-top: 1rem;
+border-top: 1px solid #eee;
+padding-top: 1rem;
+}
+
+.lap-item {
+padding: 0.5rem;
+border-bottom: 1px solid #eee;
+font-family: monospace;
+}
+
+.lap-item:last-child {
+border-bottom: none;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Stopwatch & Clock</h1>
+
+<div class="tabs">
+<button class="tab active" onclick="switchTab('clock')">Clock</button>
+<button class="tab" onclick="switchTab('stopwatch')">Stopwatch</button>
+</div>
+
+<div id="clock" class="tab-content active">
+<div class="clock">
+<span id="time">--:--:--</span>
+</div>
+<div>
+<span id="date">Loading date...</span>
+</div>
+</div>
+
+<div id="stopwatch" class="tab-content">
+<div class="stopwatch" id="display">00:00:00</div>
+<div class="controls">
+<button id="startBtn">Start</button>
+<button id="stopBtn" disabled>Stop</button>
+<button id="resetBtn" disabled>Reset</button>
+<button id="lapBtn" disabled>Lap</button>
+</div>
+<div class="lap-list" id="lapList"></div>
+</div>
+</div>
+
+<script>
+// Clock functionality
+function updateClock() {
+const now = new Date();
+
+// Format time
+const hours = now.getHours().toString().padStart(2, '0');
+const minutes = now.getMinutes().toString().padStart(2, '0');
+const seconds = now.getSeconds().toString().padStart(2, '0');
+document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+
+// Format date
+const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+document.getElementById('date').textContent = now.toLocaleDateString(undefined, options);
+}
+
+// Update clock immediately and then every second
+updateClock();
+setInterval(updateClock, 1000);
+
+// Stopwatch functionality
+let startTime;
+let elapsedTime = 0;
+let timerInterval;
+let isRunning = false;
+
+const display = document.getElementById('display');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const resetBtn = document.getElementById('resetBtn');
+const lapBtn = document.getElementById('lapBtn');
+const lapList = document.getElementById('lapList');
+
+function formatTime(ms) {
+let totalSeconds = Math.floor(ms / 1000);
+let hours = Math.floor(totalSeconds / 3600);
+let minutes = Math.floor((totalSeconds % 3600) / 60);
+let seconds = totalSeconds % 60;
+
+return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function updateDisplay() {
+display.textContent = formatTime(elapsedTime);
+}
+
+function startTimer() {
+if (!isRunning) {
+startTime = Date.now() - elapsedTime;
+timerInterval = setInterval(function() {
+elapsedTime = Date.now() - startTime;
+updateDisplay();
+}, 10);
+isRunning = true;
+
+startBtn.disabled = true;
+stopBtn.disabled = false;
+resetBtn.disabled = false;
+lapBtn.disabled = false;
+}
+}
+
+function stopTimer() {
+if (isRunning) {
+clearInterval(timerInterval);
+isRunning = false;
+
+startBtn.disabled = false;
+stopBtn.disabled = true;
+}
+}
+
+function resetTimer() {
+stopTimer();
+elapsedTime = 0;
+updateDisplay();
+lapList.innerHTML = '';
+
+resetBtn.disabled = true;
+lapBtn.disabled = true;
+}
+
+function recordLap() {
+if (isRunning) {
+const lapTime = document.createElement('div');
+lapTime.className = 'lap-item';
+lapTime.textContent = formatTime(elapsedTime);
+lapList.prepend(lapTime);
+}
+}
+
+startBtn.addEventListener('click', startTimer);
+stopBtn.addEventListener('click', stopTimer);
+resetBtn.addEventListener('click', resetTimer);
+lapBtn.addEventListener('click', recordLap);
+
+// Tab switching functionality
+function switchTab(tabName) {
+// Hide all tab contents
+document.querySelectorAll('.tab-content').forEach(tab => {
+tab.classList.remove('active');
+});
+
+// Deactivate all tabs
+document.querySelectorAll('.tab').forEach(tab => {
+tab.classList.remove('active');
+});
+
+// Activate selected tab
+document.getElementById(tabName).classList.add('active');
+
+// Activate corresponding tab button
+document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+}
+</script>
+</body>
+</html>
